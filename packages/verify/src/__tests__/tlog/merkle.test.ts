@@ -13,8 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+import { fromPartial } from '@total-typescript/shoehorn';
 import { VerificationError } from '../../error';
 import { verifyMerkleInclusion } from '../../tlog/merkle';
+import { crypto } from '../../util';
 
 import type { TLogEntryWithInclusionProof } from '@sigstore/bundle';
 
@@ -180,6 +182,23 @@ describe('verifyMerkleInclusion', () => {
       expect(() => verifyMerkleInclusion(invalidEntry)).toThrow(
         VerificationError
       );
+    });
+  });
+
+  describe('when we have the smallest possible tree', () => {
+    const body = Buffer.from('foo');
+    const entry: TLogEntryWithInclusionProof = fromPartial({
+      canonicalizedBody: body,
+      inclusionProof: {
+        hashes: [],
+        treeSize: '1',
+        logIndex: '0',
+        rootHash: crypto.hash(Buffer.from([0x00]), body),
+      },
+    });
+
+    it('returns true', () => {
+      expect(verifyMerkleInclusion(entry)).toBe(true);
     });
   });
 });
