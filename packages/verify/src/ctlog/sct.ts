@@ -13,12 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+import { TLogAuthority, filterTLogAuthorities } from '../trust';
 import { crypto } from '../util';
 import { ByteStream } from '../util/stream';
 import { EXTENSION_OID_SCT, x509Certificate } from '../x509/cert';
 import { x509SCTExtension } from '../x509/ext';
 
-import type { TransparencyLogInstance } from '../trust';
 interface SCTVerificationResult {
   verified: boolean;
   logID: Buffer;
@@ -27,7 +27,7 @@ interface SCTVerificationResult {
 export function verifySCTs(
   cert: x509Certificate,
   issuer: x509Certificate,
-  ctlogs: TransparencyLogInstance[]
+  ctlogs: TLogAuthority[]
 ): SCTVerificationResult[] {
   let extSCT: x509SCTExtension | undefined;
 
@@ -53,13 +53,15 @@ export function verifySCTs(
     }
   }
 
+  // No SCT extension found to verify
   if (!extSCT) {
-    throw new Error('Certificate does not contain SCT extension');
+    return [];
   }
 
+  // Found an SCT extension but it has no SCTs
   /* istanbul ignore if -- too difficult to fabricate test case for this */
   if (extSCT.signedCertificateTimestamps.length === 0) {
-    throw new Error('Certificate does not contain any SCTs');
+    return [];
   }
 
   // Construct the PreCert structure
@@ -77,15 +79,16 @@ export function verifySCTs(
 
   // Calculate and return the verification results for each SCT
   return extSCT.signedCertificateTimestamps.map((sct) => {
-    let verified = false;
-
     // Find the ctlog instance that corresponds to the SCT's logID
-    const log = ctlogs.find((log) => log.logId.keyId.equals(sct.logID));
+    const validCTLogs = filterTLogAuthorities(ctlogs, {
+      logID: sct.logID,
+      targetDate: sct.datetime,
+    });
 
-    if (log) {
-      const key = crypto.createPublicKey(log.publicKey.rawBytes);
-      verified = sct.verify(preCert.buffer, key);
-    }
+    // See if the SCT is valid for any of the CT logs
+    const verified = validCTLogs.some((log) =>
+      sct.verify(preCert.buffer, log.publicKey)
+    );
 
     return { logID: sct.logID, verified };
   });

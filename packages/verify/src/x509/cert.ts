@@ -39,11 +39,6 @@ const ECDSA_SIGNATURE_ALGOS: Record<string, string> = {
   '1.2.840.10045.4.3.4': 'sha512',
 };
 
-interface SCTVerificationResult {
-  verified: boolean;
-  logID: Buffer;
-}
-
 export class x509Certificate {
   public root: ASN1Obj;
 

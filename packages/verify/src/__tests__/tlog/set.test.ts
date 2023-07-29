@@ -17,9 +17,10 @@ import {
   bundleFromJSON,
   TLogEntryWithInclusionPromise,
 } from '@sigstore/bundle';
-import { HashAlgorithm, PublicKeyDetails } from '@sigstore/protobuf-specs';
+import { fromPartial } from '@total-typescript/shoehorn';
+import { VerificationError } from '../../error';
 import { verifyTLogSET } from '../../tlog/set';
-import type { PublicKey, TransparencyLogInstance } from '../../trust';
+import type { TLogAuthority } from '../../trust';
 import { crypto } from '../../util';
 import bundles from '../__fixtures__/bundles/v01';
 
@@ -30,38 +31,29 @@ describe('verifyTLogSET', () => {
   );
   const keyID = crypto.hash(keyBytes);
 
-  const publicKey: PublicKey = {
-    rawBytes: keyBytes,
-    keyDetails: PublicKeyDetails.PKIX_ECDSA_P256_SHA_256,
+  const validTLog: TLogAuthority = {
+    logID: keyID,
+    publicKey: crypto.createPublicKey(keyBytes),
+    validFor: { start: new Date(0), end: new Date('2100-01-01') },
   };
 
-  const validTLog: TransparencyLogInstance = {
-    baseUrl: 'https://tlog.sigstore.dev',
-    hashAlgorithm: HashAlgorithm.SHA2_256,
-    publicKey,
-    logId: { keyId: keyID },
-  };
-
-  const invalidTLog: TransparencyLogInstance = {
-    hashAlgorithm: HashAlgorithm.SHA2_256,
-    baseUrl: 'https://invalid.tlog.example.com',
-    logId: { keyId: Buffer.from('invalid') },
-    publicKey: {
-      keyDetails: PublicKeyDetails.PKIX_ECDSA_P256_SHA_256,
-      rawBytes: Buffer.from('invalid'),
-    },
+  const invalidTLog: TLogAuthority = {
+    logID: Buffer.from('invalid'),
+    publicKey: crypto.createPublicKey(keyBytes),
+    validFor: { start: new Date(0), end: new Date('2100-01-01') },
   };
 
   const bundle = bundleFromJSON(bundles.signature.valid.withSigningCert);
-  const entry = bundle.verificationMaterial
-    ?.tlogEntries[0] as TLogEntryWithInclusionPromise;
+  const entry: TLogEntryWithInclusionPromise = fromPartial(
+    bundle.verificationMaterial?.tlogEntries[0]
+  );
 
   describe('when there is a matching TLogInstance', () => {
     const tlogs = [invalidTLog, validTLog];
 
     describe('when the SET can be verified', () => {
-      it('returns true', () => {
-        expect(verifyTLogSET(entry, tlogs)).toBe(true);
+      it('does NOT throw an error', () => {
+        expect(verifyTLogSET(entry, tlogs)).toBeUndefined();
       });
     });
 
@@ -70,8 +62,11 @@ describe('verifyTLogSET', () => {
       const entry = bundle.verificationMaterial
         ?.tlogEntries[0] as TLogEntryWithInclusionPromise;
 
-      it('returns false', () => {
-        expect(verifyTLogSET(entry, tlogs)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogSET(entry, tlogs)).toThrowWithCode(
+          VerificationError,
+          'TLOG_INCLUSION_PROMISE_ERROR'
+        );
       });
     });
 
@@ -80,15 +75,15 @@ describe('verifyTLogSET', () => {
         const tlogs = [
           {
             ...validTLog,
-            publicKey: {
-              ...publicKey,
-              validFor: { start: new Date(Number.MIN_SAFE_INTEGER) },
-            },
+            validFor: { start: new Date(), end: new Date('2999-01-01') },
           },
         ];
 
-        it('returns false', () => {
-          expect(verifyTLogSET(entry, tlogs)).toBe(false);
+        it('throws an error', () => {
+          expect(() => verifyTLogSET(entry, tlogs)).toThrowWithCode(
+            VerificationError,
+            'TLOG_INCLUSION_PROMISE_ERROR'
+          );
         });
       });
 
@@ -96,15 +91,15 @@ describe('verifyTLogSET', () => {
         const tlogs = [
           {
             ...validTLog,
-            publicKey: {
-              ...publicKey,
-              validFor: { start: new Date(0), end: new Date(0) },
-            },
+            validFor: { start: new Date(0), end: new Date(0) },
           },
         ];
 
-        it('returns false', () => {
-          expect(verifyTLogSET(entry, tlogs)).toBe(false);
+        it('throws an error', () => {
+          expect(() => verifyTLogSET(entry, tlogs)).toThrowWithCode(
+            VerificationError,
+            'TLOG_INCLUSION_PROMISE_ERROR'
+          );
         });
       });
     });
@@ -113,8 +108,11 @@ describe('verifyTLogSET', () => {
   describe('when there is NO matching TLogInstance', () => {
     const tlogs = [invalidTLog];
 
-    it('returns false', () => {
-      expect(verifyTLogSET(entry, tlogs)).toBe(false);
+    it('throws an error', () => {
+      expect(() => verifyTLogSET(entry, tlogs)).toThrowWithCode(
+        VerificationError,
+        'TLOG_INCLUSION_PROMISE_ERROR'
+      );
     });
   });
 });

@@ -1,0 +1,13 @@
+import type { Bundle } from '@sigstore/bundle';
+import type { SignatureContent } from '../shared.types';
+import { DSSESignatureContent } from './dsse';
+import { MessageSignatureContent } from './message';
+
+export function signatureContent(bundle: Bundle): SignatureContent {
+  switch (bundle.content.$case) {
+    case 'dsseEnvelope':
+      return new DSSESignatureContent(bundle.content.dsseEnvelope);
+    case 'messageSignature':
+      return new MessageSignatureContent(bundle.content.messageSignature);
+  }
+}

@@ -1,85 +1,62 @@
 import { HashAlgorithm, PublicKeyDetails } from '@sigstore/protobuf-specs';
+import { fromPartial } from '@total-typescript/shoehorn';
 import assert from 'assert';
 import { ValidationError } from '../../error';
 import {
+  TLogAuthority,
   assertTransparencyLogInstance,
-  filterTLogInstances,
+  filterTLogAuthorities,
 } from '../../trust/tlog';
-import type { TransparencyLogInstance } from '../../trust/trust.types';
 
-describe('filterTLogInstances', () => {
-  const tlogInstances: TransparencyLogInstance[] = [
+describe('filterTLogAuthorities', () => {
+  const tlogInstances: TLogAuthority[] = [
     {
-      logId: { keyId: Buffer.from('log1') },
-      baseUrl: 'https://logid1.sigstore.dev',
-      hashAlgorithm: HashAlgorithm.SHA2_256,
-      publicKey: {
-        rawBytes: Buffer.from('rawBytes1'),
-        keyDetails: PublicKeyDetails.PKIX_ECDSA_P256_SHA_256,
+      logID: Buffer.from('log1'),
+      publicKey: fromPartial({}),
+      validFor: {
+        start: new Date('2020-01-01'),
+        end: new Date('2020-12-31'),
       },
     },
     {
-      logId: { keyId: Buffer.from('log2') },
-      baseUrl: 'https://logid2.sigstore.dev',
-      hashAlgorithm: HashAlgorithm.SHA2_256,
-      publicKey: {
-        rawBytes: Buffer.from('rawBytes2'),
-        keyDetails: PublicKeyDetails.PKIX_ECDSA_P256_SHA_256,
-        validFor: {
-          start: new Date('2020-01-01'),
-          end: new Date('2020-12-31'),
-        },
+      logID: Buffer.from('log2'),
+      publicKey: fromPartial({}),
+      validFor: {
+        start: new Date('1900-01-01'),
+        end: new Date('1900-12-31'),
       },
     },
     {
-      logId: { keyId: Buffer.from('log3') },
-      baseUrl: 'https://logid3.sigstore.dev',
-      hashAlgorithm: HashAlgorithm.SHA2_256,
-      publicKey: {
-        rawBytes: Buffer.from('rawBytes3'),
-        keyDetails: PublicKeyDetails.PKIX_ECDSA_P256_SHA_256,
-        validFor: {
-          start: new Date('2020-01-01'),
-        },
-      },
-    },
-    {
-      logId: { keyId: Buffer.from('log4') },
-      baseUrl: 'https://logid4.sigstore.dev',
-      hashAlgorithm: HashAlgorithm.SHA2_256,
-      publicKey: {
-        rawBytes: Buffer.from('rawBytes4'),
-        keyDetails: PublicKeyDetails.PKIX_ECDSA_P256_SHA_256,
-        validFor: {
-          start: new Date('2000-01-01'),
-          end: new Date('2000-12-31'),
-        },
+      logID: Buffer.from('log3'),
+      publicKey: fromPartial({}),
+      validFor: {
+        start: new Date('2020-01-01'),
+        end: new Date('2020-12-31'),
       },
     },
   ];
 
   describe('when filtering by date', () => {
     it('returns instances valid during the given date', () => {
-      const tlogs = filterTLogInstances(tlogInstances, {
+      const tlogs = filterTLogAuthorities(tlogInstances, {
         targetDate: new Date('2020-02-01'),
       });
 
-      expect(tlogs).toHaveLength(3);
-      expect(tlogs[0].logId.keyId).toEqual(Buffer.from('log1'));
-      expect(tlogs[1].logId.keyId).toEqual(Buffer.from('log2'));
-      expect(tlogs[2].logId.keyId).toEqual(Buffer.from('log3'));
+      expect(tlogs).toHaveLength(2);
+      expect(tlogs[0].logID).toEqual(Buffer.from('log1'));
+      expect(tlogs[1].logID).toEqual(Buffer.from('log3'));
     });
   });
 
   describe('when filtering by date and log ID', () => {
     it('returns instances valid during the given date for the given log ID', () => {
-      const tlogs = filterTLogInstances(tlogInstances, {
-        targetDate: new Date('2020-02-01'),
+      const tlogs = filterTLogAuthorities(tlogInstances, {
+        targetDate: new Date('1900-02-01'),
         logID: Buffer.from('log2'),
       });
 
       expect(tlogs).toHaveLength(1);
-      expect(tlogs[0].logId.keyId).toEqual(Buffer.from('log2'));
+      expect(tlogs[0].logID).toEqual(Buffer.from('log2'));
     });
   });
 });

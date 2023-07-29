@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+import { verifyCertificateChain } from '../../ca/chain';
 import { x509Certificate } from '../../x509/cert';
-import { verifyCertificateChain } from '../../x509/chain';
 import { certificates } from '../__fixtures__/certs';
 
 describe('CertificateChainVerifier', () => {
@@ -34,7 +34,7 @@ describe('CertificateChainVerifier', () => {
 
       it('throws an error', () => {
         expect(() => verifyCertificateChain(opts)).toThrowError(
-          'No trusted certificate path found'
+          'no trusted certificate path found'
         );
       });
     });
@@ -47,7 +47,7 @@ describe('CertificateChainVerifier', () => {
 
       it('throws an error', () => {
         expect(() => verifyCertificateChain(opts)).toThrowError(
-          'No valid certificate path found'
+          'no valid certificate path found'
         );
       });
     });
@@ -61,7 +61,7 @@ describe('CertificateChainVerifier', () => {
 
       it('throws an error', () => {
         expect(() => verifyCertificateChain(opts)).toThrowError(
-          'Certificate is not valid or expired at the specified date'
+          'certificate is not valid or expired at the specified date'
         );
       });
     });
@@ -74,7 +74,7 @@ describe('CertificateChainVerifier', () => {
         };
 
         expect(() => verifyCertificateChain(opts)).toThrowError(
-          'Intermediate certificate is not a CA'
+          'intermediate certificate is not a CA'
         );
       });
     });
@@ -87,7 +87,7 @@ describe('CertificateChainVerifier', () => {
         };
 
         expect(() => verifyCertificateChain(opts)).toThrowError(
-          'Path length constraint exceeded'
+          'path length constraint exceeded'
         );
       });
     });

@@ -14,224 +14,198 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import { VerificationError } from '../error';
-import { crypto } from '../util';
 
-import type {
-  Bundle,
-  Envelope,
-  MessageSignature,
-  TransparencyLogEntry,
-} from '@sigstore/bundle';
+import type { TransparencyLogEntry } from '@sigstore/bundle';
 import type {
   ProposedDSSEEntry,
   ProposedEntry,
   ProposedHashedRekordEntry,
   ProposedIntotoEntry,
 } from '@sigstore/rekor-types';
-
-const TLOG_MISMATCH_ERROR_MSG = 'bundle content and tlog entry do not match';
+import type { SignatureContent } from '../shared.types';
 
 // Compare the given tlog entry to the given bundle
 export function verifyTLogBody(
   entry: TransparencyLogEntry,
-  bundleContent: Bundle['content']
-): boolean {
+  sigContent: SignatureContent
+): void {
   const { kind, version } = entry.kindVersion;
   const body: ProposedEntry = JSON.parse(
     entry.canonicalizedBody.toString('utf8')
   );
 
-  try {
-    if (kind !== body.kind || version !== body.apiVersion) {
-      throw new VerificationError(TLOG_MISMATCH_ERROR_MSG);
-    }
+  if (kind !== body.kind || version !== body.apiVersion) {
+    throw new VerificationError({
+      code: 'TLOG_BODY_ERROR',
+      message: `kind/version mismatch - expected: ${kind}/${version}, received: ${body.kind}/${body.apiVersion}`,
+    });
+  }
 
-    switch (body.kind) {
-      case 'dsse':
-        verifyDSSETLogBody(body, bundleContent);
-        break;
-      case 'intoto':
-        verifyIntotoTLogBody(body, bundleContent);
-        break;
-      case 'hashedrekord':
-        verifyHashedRekordTLogBody(body, bundleContent);
-        break;
-      /* istanbul ignore next */
-      default:
-        throw new VerificationError(`unsupported kind in tlog entry: ${kind}`);
-    }
-    return true;
-  } catch (e) {
-    return false;
+  switch (body.kind) {
+    case 'dsse':
+      return verifyDSSETLogBody(body, sigContent);
+    case 'intoto':
+      return verifyIntotoTLogBody(body, sigContent);
+    case 'hashedrekord':
+      return verifyHashedRekordTLogBody(body, sigContent);
+    /* istanbul ignore next */
+    default:
+      throw new VerificationError({
+        code: 'TLOG_BODY_ERROR',
+        message: `unsupported kind: ${kind}`,
+      });
   }
 }
 
 // Compare the given intoto tlog entry to the given bundle
 function verifyDSSETLogBody(
   tlogEntry: ProposedDSSEEntry,
-  content: Bundle['content']
+  content: SignatureContent
 ): void {
-  if (content.$case !== 'dsseEnvelope') {
-    throw new VerificationError(
-      `unsupported bundle content: ${content?.$case}`
-    );
-  }
-
-  const dsse = content.dsseEnvelope;
-
   switch (tlogEntry.apiVersion) {
     case '0.0.1':
-      verifyDSSE001TLogBody(tlogEntry, dsse);
-      break;
+      return verifyDSSE001TLogBody(tlogEntry, content);
     /* istanbul ignore next */
     default:
-      throw new VerificationError(
-        `unsupported dsse version: ${tlogEntry.apiVersion}`
-      );
+      throw new VerificationError({
+        code: 'TLOG_BODY_ERROR',
+        message: `unsupported dsse version: ${tlogEntry.apiVersion}`,
+      });
   }
 }
 
 // Compare the given intoto tlog entry to the given bundle
 function verifyIntotoTLogBody(
   tlogEntry: ProposedIntotoEntry,
-  content: Bundle['content']
+  content: SignatureContent
 ): void {
-  if (content.$case !== 'dsseEnvelope') {
-    throw new VerificationError(`unsupported bundle content: ${content.$case}`);
-  }
-
-  const dsse = content.dsseEnvelope;
-
   switch (tlogEntry.apiVersion) {
     case '0.0.2':
-      verifyIntoto002TLogBody(tlogEntry, dsse);
-      break;
+      return verifyIntoto002TLogBody(tlogEntry, content);
     default:
-      throw new VerificationError(
-        `unsupported intoto version: ${tlogEntry.apiVersion}`
-      );
+      throw new VerificationError({
+        code: 'TLOG_BODY_ERROR',
+        message: `unsupported intoto version: ${tlogEntry.apiVersion}`,
+      });
   }
 }
 
 // Compare the given hashedrekord tlog entry to the given bundle
 function verifyHashedRekordTLogBody(
   tlogEntry: ProposedHashedRekordEntry,
-  content: Bundle['content']
+  content: SignatureContent
 ): void {
-  if (content.$case !== 'messageSignature') {
-    throw new VerificationError(
-      `unsupported bundle content: ${content?.$case}`
-    );
-  }
-
-  const messageSignature = content.messageSignature;
-
   switch (tlogEntry.apiVersion) {
     case '0.0.1':
-      verifyHashedrekor001TLogBody(tlogEntry, messageSignature);
-      break;
+      return verifyHashedrekord001TLogBody(tlogEntry, content);
     /* istanbul ignore next */
     default:
-      throw new VerificationError(
-        `unsupported hashedrekord version: ${tlogEntry.apiVersion}`
-      );
+      throw new VerificationError({
+        code: 'TLOG_BODY_ERROR',
+        message: `unsupported hashedrekord version: ${tlogEntry.apiVersion}`,
+      });
   }
 }
 
 // Compare the given dsse v0.0.1 tlog entry to the given DSSE envelope.
 function verifyDSSE001TLogBody(
   tlogEntry: Extract<ProposedDSSEEntry, { apiVersion: '0.0.1' }>,
-  dsse: Envelope
+  content: SignatureContent
 ): void {
-  // Collect all of the signatures from the DSSE envelope
-  // Turns them into base64-encoded strings for comparison
-  const dsseSigs = dsse.signatures.map((signature) =>
-    signature.sig.toString('base64')
-  );
-
-  // Collect all of the signatures from the tlog entry
-  const tlogSigs = tlogEntry.spec.signatures?.map(
-    (signature) => signature.signature
-  );
-
   // Ensure the bundle's DSSE and the tlog entry contain the same number of signatures
-  if (dsseSigs.length !== tlogSigs?.length) {
-    throw new VerificationError(TLOG_MISMATCH_ERROR_MSG);
+  if (tlogEntry.spec.signatures?.length !== 1) {
+    throw new VerificationError({
+      code: 'TLOG_BODY_ERROR',
+      message: 'signature count mismatch',
+    });
   }
 
-  // Ensure that every signature in the bundle's DSSE is present in the tlog entry
-  if (!dsseSigs.every((dsseSig) => tlogSigs.includes(dsseSig))) {
-    throw new VerificationError(TLOG_MISMATCH_ERROR_MSG);
-  }
+  const tlogSig = tlogEntry.spec.signatures[0].signature;
+
+  // Ensure that the signature in the bundle's DSSE matches tlog entry
+  if (!content.compareSignature(Buffer.from(tlogSig, 'base64')))
+    throw new VerificationError({
+      code: 'TLOG_BODY_ERROR',
+      message: 'tlog entry signature mismatch',
+    });
 
   // Ensure the digest of the bundle's DSSE payload matches the digest in the
   // tlog entry
-  const dssePayloadHash = crypto.hash(dsse.payload).toString('hex');
+  const tlogHash =
+    tlogEntry.spec.payloadHash?.value || /* istanbul ignore next */ '';
 
-  if (dssePayloadHash !== tlogEntry.spec.payloadHash?.value) {
-    throw new VerificationError(TLOG_MISMATCH_ERROR_MSG);
+  if (!content.compareDigest(Buffer.from(tlogHash, 'hex'))) {
+    throw new VerificationError({
+      code: 'TLOG_BODY_ERROR',
+      message: 'DSSE payload hash mismatch',
+    });
   }
 }
 
 // Compare the given intoto v0.0.2 tlog entry to the given DSSE envelope.
 function verifyIntoto002TLogBody(
   tlogEntry: Extract<ProposedIntotoEntry, { apiVersion: '0.0.2' }>,
-  dsse: Envelope
+  content: SignatureContent
 ): void {
-  // Collect all of the signatures from the DSSE envelope
-  // Turns them into base64-encoded strings for comparison
-  const dsseSigs = dsse.signatures.map((signature) =>
-    signature.sig.toString('base64')
-  );
-
-  // Collect all of the signatures from the tlog entry
-  // Remember that tlog signatures are double base64-encoded
-  const tlogSigs = tlogEntry.spec.content.envelope.signatures.map(
-    (signature) =>
-      signature.sig
-        ? base64Decode(signature.sig)
-        : /* istanbul ignore next */ ''
-  );
-
   // Ensure the bundle's DSSE and the tlog entry contain the same number of signatures
-  if (dsseSigs.length !== tlogSigs?.length) {
-    throw new VerificationError(TLOG_MISMATCH_ERROR_MSG);
+  if (tlogEntry.spec.content.envelope.signatures?.length !== 1) {
+    throw new VerificationError({
+      code: 'TLOG_BODY_ERROR',
+      message: 'signature count mismatch',
+    });
   }
 
-  // Ensure that every signature in the bundle's DSSE is present in the tlog entry
-  if (!dsseSigs.every((dsseSig) => tlogSigs.includes(dsseSig))) {
-    throw new VerificationError(TLOG_MISMATCH_ERROR_MSG);
-  }
+  // Signature is double-base64-encoded in the tlog entry
+  const tlogSig = base64Decode(
+    tlogEntry.spec.content.envelope.signatures[0].sig
+  );
+
+  // Ensure that the signature in the bundle's DSSE matches tlog entry
+  if (!content.compareSignature(Buffer.from(tlogSig, 'base64')))
+    throw new VerificationError({
+      code: 'TLOG_BODY_ERROR',
+      message: 'tlog entry signature mismatch',
+    });
 
   // Ensure the digest of the bundle's DSSE payload matches the digest in the
   // tlog entry
-  const dssePayloadHash = crypto.hash(dsse.payload).toString('hex');
+  const tlogHash =
+    tlogEntry.spec.content.payloadHash?.value || /* istanbul ignore next */ '';
 
-  if (dssePayloadHash !== tlogEntry.spec.content.payloadHash?.value) {
-    throw new VerificationError(TLOG_MISMATCH_ERROR_MSG);
+  if (!content.compareDigest(Buffer.from(tlogHash, 'hex'))) {
+    throw new VerificationError({
+      code: 'TLOG_BODY_ERROR',
+      message: 'DSSE payload hash mismatch',
+    });
   }
 }
 
 // Compare the given hashedrekord v0.0.1 tlog entry to the given message
 // signature
-function verifyHashedrekor001TLogBody(
+function verifyHashedrekord001TLogBody(
   tlogEntry: Extract<ProposedHashedRekordEntry, { apiVersion: '0.0.1' }>,
-  messageSignature: MessageSignature
+  content: SignatureContent
 ): void {
   // Ensure that the bundles message signature matches the tlog entry
-  const msgSig = messageSignature.signature.toString('base64');
-  const tlogSig = tlogEntry.spec.signature.content;
+  const tlogSig =
+    tlogEntry.spec.signature.content || /* istanbul ignore next */ '';
 
-  if (msgSig !== tlogSig) {
-    throw new VerificationError(TLOG_MISMATCH_ERROR_MSG);
+  if (!content.compareSignature(Buffer.from(tlogSig, 'base64'))) {
+    throw new VerificationError({
+      code: 'TLOG_BODY_ERROR',
+      message: 'signature mismatch',
+    });
   }
 
   // Ensure that the bundle's message digest matches the tlog entry
-  const msgDigest = messageSignature.messageDigest?.digest.toString('hex');
-  const tlogDigest = tlogEntry.spec.data.hash?.value;
+  const tlogDigest =
+    tlogEntry.spec.data.hash?.value || /* istanbul ignore next */ '';
 
-  if (msgDigest !== tlogDigest) {
-    throw new VerificationError(TLOG_MISMATCH_ERROR_MSG);
+  if (!content.compareDigest(Buffer.from(tlogDigest, 'hex'))) {
+    throw new VerificationError({
+      code: 'TLOG_BODY_ERROR',
+      message: 'digest mismatch',
+    });
   }
 }
 

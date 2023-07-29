@@ -18,15 +18,24 @@ class BaseError<T extends string> extends Error {
   }
 }
 
-type VerificationErrorCode = 'CERTIFICATE_ERROR' | 'FOO';
+type VerificationErrorCode =
+  | 'TLOG_INCLUSION_PROOF_ERROR'
+  | 'TLOG_INCLUSION_PROMISE_ERROR'
+  | 'TLOG_BODY_ERROR'
+  | 'CERTIFICATE_ERROR';
 
 export class VerificationError extends BaseError<VerificationErrorCode> {
   // Using during transition to new error class. Callers should specify their own code
-  constructor(message: string) {
-    super({
-      code: 'CERTIFICATE_ERROR',
-      message,
-    });
+  constructor({
+    code,
+    message,
+    cause,
+  }: {
+    code: VerificationErrorCode;
+    message: string;
+    cause?: any /* eslint-disable-line @typescript-eslint/no-explicit-any */;
+  }) {
+    super({ code, message, cause });
   }
 }
 

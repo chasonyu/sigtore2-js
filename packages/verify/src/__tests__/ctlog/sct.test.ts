@@ -1,40 +1,32 @@
-import { HashAlgorithm, PublicKeyDetails } from '@sigstore/protobuf-specs';
 import { verifySCTs } from '../../ctlog/sct';
+import { crypto } from '../../util';
 import { x509Certificate } from '../../x509/cert';
 import { certificates } from '../__fixtures__/certs';
 
-import type { TransparencyLogInstance } from '../../trust';
+import type { TLogAuthority } from '../../trust';
 
 describe('verifySCTs', () => {
   // Fulcio ctfe key
   const ctfe =
     'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEbfwR+RJudXscgRBRpKX1XFDy3PyudDxz/SfnRi1fT8ekpfBd2O1uoz7jr3Z8nKzxA69EUQ+eFCFI3zeubPWU7w==';
 
-  const ctl: TransparencyLogInstance = {
-    baseUrl: '',
-    hashAlgorithm: HashAlgorithm.SHA2_256,
-    publicKey: {
-      rawBytes: Buffer.from(ctfe, 'base64'),
-      keyDetails: PublicKeyDetails.PKIX_ECDSA_P256_SHA_256,
-    },
-    logId: {
-      keyId: Buffer.from(
-        'CGCS8ChS/2hF0dFrJ4ScRWcYrBY9wzjSbea8IgY2b3I=',
-        'base64'
-      ),
-    },
+  const ctl: TLogAuthority = {
+    logID: Buffer.from(
+      'CGCS8ChS/2hF0dFrJ4ScRWcYrBY9wzjSbea8IgY2b3I=',
+      'base64'
+    ),
+    publicKey: crypto.createPublicKey(Buffer.from(ctfe, 'base64')),
+    validFor: { start: new Date('2000-01-01'), end: new Date('2999-01-01') },
   };
 
-  const logs: TransparencyLogInstance[] = [ctl];
+  const logs: TLogAuthority[] = [ctl];
 
   describe('when the certificate does NOT have an SCT extension', () => {
     const leaf = x509Certificate.parse(certificates.leaf);
     const issuer = x509Certificate.parse(certificates.intermediate);
 
-    it('throws an error', () => {
-      expect(() => {
-        verifySCTs(leaf, issuer, logs);
-      }).toThrow(/does not contain SCT/);
+    it('returns an empty array', () => {
+      expect(verifySCTs(leaf, issuer, logs)).toHaveLength(0);
     });
   });
 

@@ -23,13 +23,16 @@ const RFC6962_NODE_HASH_PREFIX = Buffer.from([0x01]);
 
 export function verifyMerkleInclusion(
   entry: TLogEntryWithInclusionProof
-): boolean {
+): void {
   const inclusionProof = entry.inclusionProof;
   const logIndex = BigInt(inclusionProof.logIndex);
   const treeSize = BigInt(inclusionProof.treeSize);
 
   if (logIndex < 0n || logIndex >= treeSize) {
-    throw new VerificationError('invalid inclusion proof index');
+    throw new VerificationError({
+      code: 'TLOG_INCLUSION_PROOF_ERROR',
+      message: `invalid index: ${logIndex}`,
+    });
   }
 
   // Figure out which subset of hashes corresponds to the inner and border
@@ -37,7 +40,10 @@ export function verifyMerkleInclusion(
   const { inner, border } = decompInclProof(logIndex, treeSize);
 
   if (inclusionProof.hashes.length !== inner + border) {
-    throw new VerificationError('invalid inclusion proof length');
+    throw new VerificationError({
+      code: 'TLOG_INCLUSION_PROOF_ERROR',
+      message: 'invalid hash count',
+    });
   }
 
   const innerHashes = inclusionProof.hashes.slice(0, inner);
@@ -53,7 +59,12 @@ export function verifyMerkleInclusion(
   );
 
   // Calculated hash should match the root hash in the inclusion proof
-  return crypto.bufferEqual(calculatedHash, inclusionProof.rootHash);
+  if (!crypto.bufferEqual(calculatedHash, inclusionProof.rootHash)) {
+    throw new VerificationError({
+      code: 'TLOG_INCLUSION_PROOF_ERROR',
+      message: 'calculated root hash does not match inclusion proof',
+    });
+  }
 }
 
 // Breaks down inclusion proof for a leaf at the specified index in a tree of

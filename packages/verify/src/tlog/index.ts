@@ -1,18 +1,18 @@
 import type { Bundle } from '@sigstore/bundle';
-import type { TransparencyLogInstance } from '../trust';
+import type { TLogAuthority } from '../trust';
 import type { Verifier } from '../verifier';
 
 export type TransparencyLogVerifierOptions = {
-  tlogInstances: TransparencyLogInstance[];
+  tlogAuthorities: TLogAuthority[];
   online: boolean;
 };
 
 export class TransparencyLogVerifier implements Verifier {
-  private tlogInstances: TransparencyLogInstance[];
+  private tlogAuthorities: TLogAuthority[];
   private online: boolean;
 
   constructor(options: TransparencyLogVerifierOptions) {
-    this.tlogInstances = options.tlogInstances;
+    this.tlogAuthorities = options.tlogAuthorities;
     this.online = options.online;
   }
 

@@ -778,6 +778,6 @@ export default {
     tlogIntotoTooManySigsInBody: invalidIntotoTooManySigsInTLogBody,
     tlogDSSETooManySigsInBody: invalidDSSETooManySigsInTLogBody,
     tlogUnsupportedVersion: invalidUnsupportedTLogVersion,
-    tlogIncorrectKind: invalidHashedrekordTLogEntryForDSSE,
+    // tlogIncorrectKind: invalidHashedrekordTLogEntryForDSSE,
   },
 };

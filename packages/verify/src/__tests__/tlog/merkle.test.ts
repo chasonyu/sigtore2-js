@@ -122,65 +122,71 @@ describe('verifyMerkleInclusion', () => {
   };
 
   describe('when the inclusion proof is valid', () => {
-    const entry = {
+    const entry: TLogEntryWithInclusionProof = fromPartial({
       canonicalizedBody,
       inclusionProof,
-    } as TLogEntryWithInclusionProof;
+    });
 
-    it('returns true', () => {
-      expect(verifyMerkleInclusion(entry)).toBe(true);
+    it('does NOT throw an error', () => {
+      expect(verifyMerkleInclusion(entry)).toBeUndefined();
     });
   });
 
   describe('when the entry does NOT match the inclusion proof', () => {
-    const invalidEntry = {
+    const invalidEntry: TLogEntryWithInclusionProof = fromPartial({
       canonicalizedBody: Buffer.from('invalid'),
       inclusionProof,
-    } as TLogEntryWithInclusionProof;
+    });
 
-    it('returns false', () => {
-      expect(verifyMerkleInclusion(invalidEntry)).toBe(false);
+    it('throws an error', () => {
+      expect(() => verifyMerkleInclusion(invalidEntry)).toThrowWithCode(
+        VerificationError,
+        'TLOG_INCLUSION_PROOF_ERROR'
+      );
     });
   });
 
   describe('when the log index is invalid', () => {
-    const invalidEntry = {
+    const invalidEntry: TLogEntryWithInclusionProof = fromPartial({
       canonicalizedBody,
       inclusionProof: { ...inclusionProof, logIndex: '-1' },
-    } as TLogEntryWithInclusionProof;
+    });
 
     it('throws an error', () => {
-      expect(() => verifyMerkleInclusion(invalidEntry)).toThrow(
-        VerificationError
+      expect(() => verifyMerkleInclusion(invalidEntry)).toThrowWithCode(
+        VerificationError,
+        'TLOG_INCLUSION_PROOF_ERROR'
       );
     });
   });
 
   describe('when the inclusion proof log index is greather than the tree size', () => {
-    const invalidEntry = {
+    const invalidEntry: TLogEntryWithInclusionProof = fromPartial({
       canonicalizedBody,
       inclusionProof: { ...inclusionProof, treeSize: '99', logIndex: '100' },
-    } as TLogEntryWithInclusionProof;
+    });
 
     it('throws an error', () => {
-      expect(() => verifyMerkleInclusion(invalidEntry)).toThrow(
-        VerificationError
+      expect(() => verifyMerkleInclusion(invalidEntry)).toThrowWithCode(
+        VerificationError,
+        'TLOG_INCLUSION_PROOF_ERROR'
       );
     });
   });
 
   describe('when the inclusion proof is missing hashes', () => {
-    const invalidEntry = {
+    const invalidEntry: TLogEntryWithInclusionProof = fromPartial({
       canonicalizedBody: Buffer.from('foo'),
       inclusionProof: {
         ...inclusionProof,
         hashes: inclusionProof.hashes.slice(0, 1),
       },
-    } as TLogEntryWithInclusionProof;
+    });
 
     it('throws an error', () => {
-      expect(() => verifyMerkleInclusion(invalidEntry)).toThrow(
-        VerificationError
+      expect(() => verifyMerkleInclusion(invalidEntry)).toThrowWithCode(
+        VerificationError,
+        'TLOG_INCLUSION_PROOF_ERROR'
       );
     });
   });
@@ -197,8 +203,8 @@ describe('verifyMerkleInclusion', () => {
       },
     });
 
-    it('returns true', () => {
-      expect(verifyMerkleInclusion(entry)).toBe(true);
+    it('does NOT throw an error', () => {
+      expect(verifyMerkleInclusion(entry)).toBeUndefined();
     });
   });
 });

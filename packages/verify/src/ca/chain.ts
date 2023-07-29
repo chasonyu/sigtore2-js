@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import { VerificationError } from '../error';
-import { x509Certificate } from './cert';
+import { x509Certificate } from '../x509/cert';
 
 interface VerifyCertificateChainOptions {
   trustedCerts: x509Certificate[];
@@ -68,7 +68,10 @@ class CertificateChainVerifier {
     );
 
     if (paths.length === 0) {
-      throw new VerificationError('No trusted certificate path found');
+      throw new VerificationError({
+        code: 'CERTIFICATE_ERROR',
+        message: 'no trusted certificate path found',
+      });
     }
 
     // Find the shortest of possible paths
@@ -89,7 +92,10 @@ class CertificateChainVerifier {
     const issuers = this.findIssuer(certificate);
 
     if (issuers.length === 0) {
-      throw new VerificationError('No valid certificate path found');
+      throw new VerificationError({
+        code: 'CERTIFICATE_ERROR',
+        message: 'no valid certificate path found',
+      });
     }
 
     for (let i = 0; i < issuers.length; i++) {
@@ -171,23 +177,28 @@ class CertificateChainVerifier {
   private checkPath(path: x509Certificate[]): void {
     /* istanbul ignore if */
     if (path.length < 1) {
-      throw new VerificationError(
-        'Certificate chain must contain at least one certificate'
-      );
+      throw new VerificationError({
+        code: 'CERTIFICATE_ERROR',
+        message: 'certificate chain must contain at least one certificate',
+      });
     }
 
     // Check that all certificates are valid at the check date
     const validForDate = path.every((cert) => cert.validForDate(this.validAt));
     if (!validForDate) {
-      throw new VerificationError(
-        'Certificate is not valid or expired at the specified date'
-      );
+      throw new VerificationError({
+        code: 'CERTIFICATE_ERROR',
+        message: 'certificate is not valid or expired at the specified date',
+      });
     }
 
     // Ensure that all certificates beyond the leaf are CAs
     const validCAs = path.slice(1).every((cert) => cert.isCA);
     if (!validCAs) {
-      throw new VerificationError('Intermediate certificate is not a CA');
+      throw new VerificationError({
+        code: 'CERTIFICATE_ERROR',
+        message: 'intermediate certificate is not a CA',
+      });
     }
 
     // Certificate's issuer must match the subject of the next certificate
@@ -195,7 +206,10 @@ class CertificateChainVerifier {
     for (let i = path.length - 2; i >= 0; i--) {
       /* istanbul ignore if */
       if (!path[i].issuer.equals(path[i + 1].subject)) {
-        throw new VerificationError('Incorrect certificate name chaining');
+        throw new VerificationError({
+          code: 'CERTIFICATE_ERROR',
+          message: 'incorrect certificate name chaining',
+        });
       }
     }
 
@@ -213,7 +227,10 @@ class CertificateChainVerifier {
         // greater than or equal to it's own depth in the chain (with an
         // adjustment for the leaf certificate)
         if (pathLength !== undefined && pathLength < i - 1) {
-          throw new VerificationError('Path length constraint exceeded');
+          throw new VerificationError({
+            code: 'CERTIFICATE_ERROR',
+            message: 'path length constraint exceeded',
+          });
         }
       }
     }

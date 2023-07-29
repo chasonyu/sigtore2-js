@@ -1,11 +1,10 @@
-import { HashAlgorithm, PublicKeyDetails } from '@sigstore/protobuf-specs';
 import { fromPartial } from '@total-typescript/shoehorn';
 import { VerificationError } from '../../error';
 import { verifyCheckpoint } from '../../tlog/checkpoint';
 import { crypto } from '../../util';
 
 import type { TLogEntryWithInclusionProof } from '@sigstore/bundle';
-import type { PublicKey, TransparencyLogInstance } from '../../trust';
+import type { TLogAuthority } from '../../trust';
 
 describe('verifyCheckpoint', () => {
   const keyBytes = Buffer.from(
@@ -14,16 +13,10 @@ describe('verifyCheckpoint', () => {
   );
   const keyID = crypto.hash(keyBytes);
 
-  const publicKey: PublicKey = {
-    rawBytes: keyBytes,
-    keyDetails: PublicKeyDetails.PKIX_ECDSA_P256_SHA_256,
-  };
-
-  const tlogInstance: TransparencyLogInstance = {
-    baseUrl: 'https://tlog.sigstore.dev',
-    hashAlgorithm: HashAlgorithm.SHA2_256,
-    publicKey,
-    logId: { keyId: keyID },
+  const tlogInstance: TLogAuthority = {
+    publicKey: crypto.createPublicKey(keyBytes),
+    logID: keyID,
+    validFor: { start: new Date('2000-01-01'), end: new Date('2100-01-01') },
   };
 
   const tlogs = [tlogInstance];
@@ -46,8 +39,8 @@ describe('verifyCheckpoint', () => {
   });
 
   describe('when the entry has a valid checkpoint', () => {
-    it('returns true', () => {
-      expect(verifyCheckpoint(entry, tlogs)).toBe(true);
+    it('does NOT throw an error', () => {
+      expect(verifyCheckpoint(entry, tlogs)).toBeUndefined();
     });
   });
 
@@ -61,9 +54,9 @@ describe('verifyCheckpoint', () => {
     );
 
     it('throws a VerificationError', () => {
-      expect(() => verifyCheckpoint(entryWithInvalidCheckpoint, tlogs)).toThrow(
-        VerificationError
-      );
+      expect(() =>
+        verifyCheckpoint(entryWithInvalidCheckpoint, tlogs)
+      ).toThrowWithCode(VerificationError, 'TLOG_INCLUSION_PROOF_ERROR');
     });
   });
 
@@ -80,9 +73,9 @@ describe('verifyCheckpoint', () => {
     );
 
     it('throws a VerificationError', () => {
-      expect(() => verifyCheckpoint(entryWithInvalidCheckpoint, tlogs)).toThrow(
-        VerificationError
-      );
+      expect(() =>
+        verifyCheckpoint(entryWithInvalidCheckpoint, tlogs)
+      ).toThrowWithCode(VerificationError, 'TLOG_INCLUSION_PROOF_ERROR');
     });
   });
 
@@ -96,9 +89,9 @@ describe('verifyCheckpoint', () => {
     });
 
     it('throws a VerificationError', () => {
-      expect(() => verifyCheckpoint(entryWitInvalidCheckpoint, tlogs)).toThrow(
-        VerificationError
-      );
+      expect(() =>
+        verifyCheckpoint(entryWitInvalidCheckpoint, tlogs)
+      ).toThrowWithCode(VerificationError, 'TLOG_INCLUSION_PROOF_ERROR');
     });
   });
 
@@ -115,9 +108,9 @@ describe('verifyCheckpoint', () => {
     );
 
     it('throws a VerificationError', () => {
-      expect(() => verifyCheckpoint(entryWithInvalidCheckpoint, tlogs)).toThrow(
-        VerificationError
-      );
+      expect(() =>
+        verifyCheckpoint(entryWithInvalidCheckpoint, tlogs)
+      ).toThrowWithCode(VerificationError, 'TLOG_INCLUSION_PROOF_ERROR');
     });
   });
 
@@ -133,19 +126,23 @@ describe('verifyCheckpoint', () => {
     );
 
     it('throws a VerificationError', () => {
-      expect(() => verifyCheckpoint(entryWithInvalidCheckpoint, tlogs)).toThrow(
-        VerificationError
-      );
+      expect(() =>
+        verifyCheckpoint(entryWithInvalidCheckpoint, tlogs)
+      ).toThrowWithCode(VerificationError, 'TLOG_INCLUSION_PROOF_ERROR');
     });
   });
 
   describe('when the entry checkpoint has the wrong root hash', () => {
     const entry: TLogEntryWithInclusionProof = fromPartial({
       inclusionProof: { ...inclusionProof, rootHash: Buffer.from('foo') },
+      integratedTime: '1688058655',
     });
 
-    it('returns false', () => {
-      expect(verifyCheckpoint(entry, tlogs)).toBe(false);
+    it('throws an error', () => {
+      expect(() => verifyCheckpoint(entry, tlogs)).toThrowWithCode(
+        VerificationError,
+        'TLOG_INCLUSION_PROOF_ERROR'
+      );
     });
   });
 
@@ -160,8 +157,10 @@ describe('verifyCheckpoint', () => {
       },
     });
 
-    it('returns false', () => {
-      expect(verifyCheckpoint(entryWithBadCheckpointSig, tlogs)).toBe(false);
+    it('throws an error', () => {
+      expect(() =>
+        verifyCheckpoint(entryWithBadCheckpointSig, tlogs)
+      ).toThrowWithCode(VerificationError, 'TLOG_INCLUSION_PROOF_ERROR');
     });
   });
 
@@ -175,24 +174,11 @@ describe('verifyCheckpoint', () => {
       },
     });
 
-    it('returns false', () => {
-      expect(verifyCheckpoint(entryWithBadLogID, tlogs)).toBe(false);
-    });
-  });
-
-  describe('when key has validFor with empty start/end values', () => {
-    const invalidTLogs = [
-      {
-        ...tlogInstance,
-        publicKey: {
-          ...publicKey,
-          validFor: { start: undefined, end: undefined },
-        },
-      },
-    ];
-
-    it('returns false', () => {
-      expect(verifyCheckpoint(entry, invalidTLogs)).toBe(false);
+    it('throws an error', () => {
+      expect(() => verifyCheckpoint(entryWithBadLogID, tlogs)).toThrowWithCode(
+        VerificationError,
+        'TLOG_INCLUSION_PROOF_ERROR'
+      );
     });
   });
 
@@ -200,15 +186,18 @@ describe('verifyCheckpoint', () => {
     const invalidTLogs = [
       {
         ...tlogInstance,
-        publicKey: {
-          ...publicKey,
-          validFor: { start: new Date('2099-01-01') },
+        validFor: {
+          start: new Date('2099-01-01'),
+          end: new Date('2100-01-01'),
         },
       },
     ];
 
-    it('returns false', () => {
-      expect(verifyCheckpoint(entry, invalidTLogs)).toBe(false);
+    it('throws an error', () => {
+      expect(() => verifyCheckpoint(entry, invalidTLogs)).toThrowWithCode(
+        VerificationError,
+        'TLOG_INCLUSION_PROOF_ERROR'
+      );
     });
   });
 
@@ -216,18 +205,18 @@ describe('verifyCheckpoint', () => {
     const invalidTLogs = [
       {
         ...tlogInstance,
-        publicKey: {
-          ...publicKey,
-          validFor: {
-            start: new Date('2000-01-01'),
-            end: new Date('2001-01-01'),
-          },
+        validFor: {
+          start: new Date('2000-01-01'),
+          end: new Date('2001-01-01'),
         },
       },
     ];
 
-    it('returns false', () => {
-      expect(verifyCheckpoint(entry, invalidTLogs)).toBe(false);
+    it('throws an error', () => {
+      expect(() => verifyCheckpoint(entry, invalidTLogs)).toThrowWithCode(
+        VerificationError,
+        'TLOG_INCLUSION_PROOF_ERROR'
+      );
     });
   });
 });

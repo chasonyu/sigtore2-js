@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import { bundleFromJSON } from '@sigstore/bundle';
+import { signatureContent } from '../../bundle';
+import { VerificationError } from '../../error';
 import { verifyTLogBody } from '../../tlog/body';
 import bundles from '../__fixtures__/bundles/v01';
 
@@ -21,33 +23,11 @@ describe('verifyTLogBody', () => {
   describe('when a message signature bundle is provided', () => {
     describe('when everything is valid', () => {
       const bundle = bundleFromJSON(bundles.signature.valid.withSigningCert);
-
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns true', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(true);
-      });
-    });
-
-    describe('when the tlog entry kind is "dsse"', () => {
-      const bundle = bundleFromJSON(
-        bundles.signature.invalid.tlogIncorrectKindDSSE
-      );
-      const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
-
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
-      });
-    });
-
-    describe('when the tlog entry kind is "intoto"', () => {
-      const bundle = bundleFromJSON(
-        bundles.signature.invalid.tlogIncorrectKindIntoto
-      );
-      const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
-
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('does NOT throw an error', () => {
+        expect(verifyTLogBody(tlogEntry, content)).toBeUndefined();
       });
     });
 
@@ -56,9 +36,13 @@ describe('verifyTLogBody', () => {
         bundles.signature.invalid.tlogIncorrectSigInBody
       );
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogBody(tlogEntry, content)).toThrowWithCode(
+          VerificationError,
+          'TLOG_BODY_ERROR'
+        );
       });
     });
 
@@ -67,9 +51,13 @@ describe('verifyTLogBody', () => {
         bundles.signature.invalid.tlogIncorrectDigestInBody
       );
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogBody(tlogEntry, content)).toThrowWithCode(
+          VerificationError,
+          'TLOG_BODY_ERROR'
+        );
       });
     });
 
@@ -78,9 +66,13 @@ describe('verifyTLogBody', () => {
         bundles.signature.invalid.tlogVersionMismatch
       );
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogBody(tlogEntry, content)).toThrowWithCode(
+          VerificationError,
+          'TLOG_BODY_ERROR'
+        );
       });
     });
   });
@@ -89,18 +81,10 @@ describe('verifyTLogBody', () => {
     describe('when everything is valid', () => {
       const bundle = bundleFromJSON(bundles.dsse.valid.withSigningCert);
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns true', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(true);
-      });
-    });
-
-    describe('when the tlog entry kind is "hashedrekord"', () => {
-      const bundle = bundleFromJSON(bundles.dsse.invalid.tlogIncorrectKind);
-      const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
-
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('does NOT throw an error', () => {
+        expect(verifyTLogBody(tlogEntry, content)).toBeUndefined();
       });
     });
 
@@ -109,18 +93,26 @@ describe('verifyTLogBody', () => {
         bundles.dsse.invalid.badSignatureTLogIntoto
       );
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogBody(tlogEntry, content)).toThrowWithCode(
+          VerificationError,
+          'TLOG_BODY_ERROR'
+        );
       });
     });
 
     describe('when the payload hash does NOT match the value in the dsse entry', () => {
       const bundle = bundleFromJSON(bundles.dsse.invalid.badSignatureTLogDSSE);
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogBody(tlogEntry, content)).toThrowWithCode(
+          VerificationError,
+          'TLOG_BODY_ERROR'
+        );
       });
     });
 
@@ -129,9 +121,13 @@ describe('verifyTLogBody', () => {
         bundles.dsse.invalid.tlogIntotoIncorrectSigInBody
       );
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogBody(tlogEntry, content)).toThrowWithCode(
+          VerificationError,
+          'TLOG_BODY_ERROR'
+        );
       });
     });
 
@@ -140,9 +136,13 @@ describe('verifyTLogBody', () => {
         bundles.dsse.invalid.tlogDSSEIncorrectSigInBody
       );
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogBody(tlogEntry, content)).toThrowWithCode(
+          VerificationError,
+          'TLOG_BODY_ERROR'
+        );
       });
     });
 
@@ -151,9 +151,13 @@ describe('verifyTLogBody', () => {
         bundles.dsse.invalid.tlogUnsupportedVersion
       );
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogBody(tlogEntry, content)).toThrowWithCode(
+          VerificationError,
+          'TLOG_BODY_ERROR'
+        );
       });
     });
 
@@ -162,9 +166,13 @@ describe('verifyTLogBody', () => {
         bundles.dsse.invalid.tlogIntotoTooManySigsInBody
       );
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogBody(tlogEntry, content)).toThrowWithCode(
+          VerificationError,
+          'TLOG_BODY_ERROR'
+        );
       });
     });
 
@@ -173,18 +181,26 @@ describe('verifyTLogBody', () => {
         bundles.dsse.invalid.tlogDSSETooManySigsInBody
       );
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogBody(tlogEntry, content)).toThrowWithCode(
+          VerificationError,
+          'TLOG_BODY_ERROR'
+        );
       });
     });
 
     describe('when there is a version mismatch between the tlog entry and the body', () => {
       const bundle = bundleFromJSON(bundles.dsse.invalid.tlogVersionMismatch);
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns false', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifyTLogBody(tlogEntry, content)).toThrowWithCode(
+          VerificationError,
+          'TLOG_BODY_ERROR'
+        );
       });
     });
   });
@@ -193,9 +209,10 @@ describe('verifyTLogBody', () => {
     describe('when everything is valid', () => {
       const bundle = bundleFromJSON(bundles.dsse.valid.withDSSETLogEntry);
       const tlogEntry = bundle.verificationMaterial.tlogEntries[0];
+      const content = signatureContent(bundle);
 
-      it('returns true', () => {
-        expect(verifyTLogBody(tlogEntry, bundle.content)).toBe(true);
+      it('does NOT throw an error', () => {
+        expect(verifyTLogBody(tlogEntry, content)).toBeUndefined();
       });
     });
   });

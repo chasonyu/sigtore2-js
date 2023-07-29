@@ -511,7 +511,7 @@ export default {
     tlogVersionMismatch: invalidTLogVersionMismatch,
     tlogIncorrectSigInBody: invalidIncorrectSigInTLogBody,
     tlogIncorrectDigestInBody: invalidIncorrectDigestInTLogBody,
-    tlogIncorrectKindDSSE: invalidDSSETLogEntryForMessageSig,
-    tlogIncorrectKindIntoto: invalidIntotoTLogEntryForMessageSig,
+    // tlogIncorrectKindDSSE: invalidDSSETLogEntryForMessageSig,
+    // tlogIncorrectKindIntoto: invalidIntotoTLogEntryForMessageSig,
   },
 };

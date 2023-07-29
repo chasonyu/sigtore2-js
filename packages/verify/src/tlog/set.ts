@@ -13,7 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-import { TransparencyLogInstance, filterTLogInstances } from '../trust';
+import { VerificationError } from '../error';
+import { TLogAuthority, filterTLogAuthorities } from '../trust';
 import { crypto, json } from '../util';
 
 import type { TLogEntryWithInclusionPromise } from '@sigstore/bundle';
@@ -31,19 +32,17 @@ interface VerificationPayload {
 // one of the trusted logs; otherwise, returns false.
 export function verifyTLogSET(
   entry: TLogEntryWithInclusionPromise,
-  tlogs: TransparencyLogInstance[]
-): boolean {
+  tlogs: TLogAuthority[]
+): void {
   // Filter the list of tlog instances to only those which might be able to
   // verify the SET
-  const validTLogs = filterTLogInstances(tlogs, {
+  const validTLogs = filterTLogAuthorities(tlogs, {
     logID: entry.logId.keyId,
     targetDate: new Date(Number(entry.integratedTime) * 1000),
   });
 
   // Check to see if we can verify the SET against any of the valid tlogs
-  return validTLogs.some((tlog) => {
-    const publicKey = crypto.createPublicKey(tlog.publicKey.rawBytes);
-
+  const verified = validTLogs.some((tlog) => {
     // Re-create the original Rekor verification payload
     const payload = toVerificationPayload(entry);
 
@@ -53,8 +52,15 @@ export function verifyTLogSET(
     // Extract the SET from the tlog entry
     const signature = entry.inclusionPromise.signedEntryTimestamp;
 
-    return crypto.verify(data, publicKey, signature);
+    return crypto.verify(data, tlog.publicKey, signature);
   });
+
+  if (!verified) {
+    throw new VerificationError({
+      code: 'TLOG_INCLUSION_PROMISE_ERROR',
+      message: 'inclusion promise could not be verified',
+    });
+  }
 }
 
 // Returns a properly formatted "VerificationPayload" for one of the
