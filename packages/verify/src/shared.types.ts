@@ -1,7 +1,7 @@
-import type { Envelope, TransparencyLogEntry } from '@sigstore/protobuf-specs';
+import type { Envelope, TransparencyLogEntry } from '@sigstore/bundle';
 import type { KeyObject } from './util/crypto';
 export type SignatureProvider = {
-  signature(): Buffer;
+  signature(): SignatureContent;
 };
 
 export type KeyIDProvider = {
@@ -21,7 +21,7 @@ export type SignedTimestampProvider = {
 };
 
 export type TLogEntryProvider = {
-  tlogEntries(): TransparencyLogEntry;
+  tlogEntries(): TransparencyLogEntry[];
 };
 
 export type SignedEntity = SignatureProvider &
@@ -37,11 +37,18 @@ export type Policy = {
 
 export type SignatureVerifier = {
   publicKey: KeyObject;
-  verifySignature(signature: Buffer, date: Buffer): boolean;
+  verifySignature(signature: Buffer, data: Buffer): boolean;
 };
 
 export type SignatureContent = {
   compareSignature(signature: Buffer): boolean;
   compareDigest(digest: Buffer): boolean;
   verifySignature(sigVerifier: SignatureVerifier): boolean;
+};
+
+type TimestampType = 'transparency-log' | 'timestamp-authority';
+export type TimestampVerificationResult = {
+  type: TimestampType;
+  logID: Buffer;
+  timestamp: Date;
 };
