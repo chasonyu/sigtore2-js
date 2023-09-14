@@ -1,12 +1,9 @@
-import { HashAlgorithm, PublicKeyDetails } from '@sigstore/protobuf-specs';
 import { fromPartial } from '@total-typescript/shoehorn';
-import assert from 'assert';
-import { ValidationError } from '../../error';
 import {
   TLogAuthority,
-  assertTransparencyLogInstance,
+  // assertTransparencyLogInstance,
   filterTLogAuthorities,
-} from '../../trust/tlog';
+} from '../../trust';
 
 describe('filterTLogAuthorities', () => {
   const tlogInstances: TLogAuthority[] = [
@@ -61,6 +58,7 @@ describe('filterTLogAuthorities', () => {
   });
 });
 
+/**
 describe('assertTransparencyLogInstance', () => {
   it('throws an error if the log ID is missing', () => {
     expect.assertions(1);
@@ -112,3 +110,4 @@ describe('assertTransparencyLogInstance', () => {
     }
   });
 });
+  **/

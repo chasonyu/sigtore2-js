@@ -24,7 +24,8 @@ type VerificationErrorCode =
   | 'TLOG_INCLUSION_PROMISE_ERROR'
   | 'TLOG_MISSING_INCLUSION_ERROR'
   | 'TLOG_BODY_ERROR'
-  | 'CERTIFICATE_ERROR';
+  | 'CERTIFICATE_ERROR'
+  | 'PUBLIC_KEY_ERROR';
 
 export class VerificationError extends BaseError<VerificationErrorCode> {
   // Using during transition to new error class. Callers should specify their own code
@@ -41,6 +42,7 @@ export class VerificationError extends BaseError<VerificationErrorCode> {
   }
 }
 
+/*
 export class ValidationError extends BaseError<'VALIDATION_ERROR'> {
   fields: string[];
 
@@ -52,3 +54,4 @@ export class ValidationError extends BaseError<'VALIDATION_ERROR'> {
     this.fields = fields;
   }
 }
+*/

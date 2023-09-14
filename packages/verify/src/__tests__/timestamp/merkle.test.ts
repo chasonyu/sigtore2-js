@@ -15,7 +15,7 @@ limitations under the License.
 */
 import { fromPartial } from '@total-typescript/shoehorn';
 import { VerificationError } from '../../error';
-import { verifyMerkleInclusion } from '../../tlog/merkle';
+import { verifyMerkleInclusion } from '../../timestamp/merkle';
 import { crypto } from '../../util';
 
 import type { TLogEntryWithInclusionProof } from '@sigstore/bundle';

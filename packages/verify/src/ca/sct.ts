@@ -13,16 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+import { VerificationError } from '../error';
+import type { SCTVerificationResult } from '../shared.types';
 import { TLogAuthority, filterTLogAuthorities } from '../trust';
 import { crypto } from '../util';
 import { ByteStream } from '../util/stream';
 import { EXTENSION_OID_SCT, x509Certificate } from '../x509/cert';
 import { x509SCTExtension } from '../x509/ext';
-
-interface SCTVerificationResult {
-  verified: boolean;
-  logID: Buffer;
-}
 
 export function verifySCTs(
   cert: x509Certificate,
@@ -90,6 +87,13 @@ export function verifySCTs(
       sct.verify(preCert.buffer, log.publicKey)
     );
 
-    return { logID: sct.logID, verified };
+    if (!verified) {
+      throw new VerificationError({
+        code: 'CERTIFICATE_ERROR',
+        message: 'SCT verification failed',
+      });
+    }
+
+    return { logID: sct.logID };
   });
 }

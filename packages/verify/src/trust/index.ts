@@ -1,2 +1,3 @@
-export { TLogAuthority, filterTLogAuthorities } from './tlog';
-export type { PublicKey, TransparencyLogInstance } from './trust.types';
+export { filterCertAuthorities } from './ca';
+export { filterTLogAuthorities } from './tlog';
+export type { CertAuthority, TLogAuthority } from './trust.types';

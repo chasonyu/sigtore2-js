@@ -1,8 +1,5 @@
-import { ValidationError } from '../error';
-
-import type { TransparencyLogInstance as TransparencyLogInstanceProto } from '@sigstore/protobuf-specs';
-import { KeyObject, createPublicKey } from '../util/crypto';
-import type { TransparencyLogInstance } from './trust.types';
+// import type { TransparencyLogInstance } from './trust.types';
+import { TLogAuthority } from './trust.types';
 
 const BEGINNING_OF_TIME = new Date(0);
 const END_OF_TIME = new Date(8640000000000000);
@@ -12,15 +9,7 @@ type FilterCriteria = {
   logID?: Buffer;
 };
 
-export type TLogAuthority = {
-  logID: Buffer;
-  publicKey: KeyObject;
-  validFor: {
-    start: Date;
-    end: Date;
-  };
-};
-
+/**
 function createTLogAuthority(
   tlogInstance: TransparencyLogInstance
 ): TLogAuthority {
@@ -58,6 +47,7 @@ export function assertTransparencyLogInstance(
     );
   }
 }
+**/
 
 // Filter the list of tlog instances to only those which match the given log
 // ID and have public keys which are valid for the given integrated time.

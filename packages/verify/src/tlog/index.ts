@@ -1,8 +1,5 @@
 import { VerificationError } from '../error';
 import { verifyTLogBody } from './body';
-import { verifyCheckpoint } from './checkpoint';
-import { verifyMerkleInclusion } from './merkle';
-import { verifyTLogSET } from './set';
 
 import type {
   TLogEntryWithInclusionPromise,
@@ -53,17 +50,6 @@ export class TransparencyLogVerifier {
     content: SignatureContent
   ): TimestampVerificationResult {
     let inclusionVerified = false;
-
-    if (isTLogEntryWithInclusionPromise(entry)) {
-      verifyTLogSET(entry, this.tlogAuthorities);
-      inclusionVerified = true;
-    }
-
-    if (isTLogEntryWithInclusionProof(entry)) {
-      verifyMerkleInclusion(entry);
-      verifyCheckpoint(entry, this.tlogAuthorities);
-      inclusionVerified = true;
-    }
 
     if (!inclusionVerified) {
       throw new VerificationError({

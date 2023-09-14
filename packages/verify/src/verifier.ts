@@ -1,29 +1,20 @@
-import { Bundle } from '@sigstore/bundle';
+import { SignedEntity } from './shared.types';
+import { verifyTimestamps } from './timestamp';
+import { TrustMaterial } from './trust';
 
-export type Verifier = {
-  verify(bundle: Bundle): Promise<void>;
-};
+export class Verifier {
+  private trustMaterial: TrustMaterial;
 
-class TransparencyLogVerifier implements Verifier {
-  async verify(bundle: Bundle): Promise<void> {
-    bundle;
+  constructor(trustMaterial: TrustMaterial) {
+    this.trustMaterial = trustMaterial;
   }
-}
 
-class CertificateTransparencyLogVerifier implements Verifier {
-  async verify(bundle: Bundle): Promise<void> {
-    bundle;
-  }
-}
+  public verify(entity: SignedEntity): void {
+    const timestamps = verifyTimestamps(
+      entity,
+      this.trustMaterial
+    );
 
-class TimestampAuthorityVerifier implements Verifier {
-  async verify(bundle: Bundle): Promise<void> {
-    bundle;
-  }
-}
-
-class SignatureVerifier implements Verifier {
-  async verify(bundle: Bundle): Promise<void> {
-    bundle;
+    timestamps.forEach((timestamp) => {
   }
 }

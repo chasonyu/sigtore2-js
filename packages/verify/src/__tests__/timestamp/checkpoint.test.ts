@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn';
 import { VerificationError } from '../../error';
-import { verifyCheckpoint } from '../../tlog/checkpoint';
+import { verifyCheckpoint } from '../../timestamp/checkpoint';
 import { crypto } from '../../util';
 
 import type { TLogEntryWithInclusionProof } from '@sigstore/bundle';

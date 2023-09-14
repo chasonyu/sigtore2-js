@@ -93,9 +93,9 @@ const validBundleWithPublicKey = {
 
 // Public key material for verifying the above bundle
 const publicKey = `-----BEGIN PUBLIC KEY-----
-  MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE9DbYBIMQLtWb6J5gtL69jgRwwEfd
-  tQtKvvG4+o3ZzlOroJplpXaVgF6wBDob++rNG9/AzSaBmApkEwI52XBjWg==
-  -----END PUBLIC KEY-----`;
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE9DbYBIMQLtWb6J5gtL69jgRwwEfd
+tQtKvvG4+o3ZzlOroJplpXaVgF6wBDob++rNG9/AzSaBmApkEwI52XBjWg==
+-----END PUBLIC KEY-----`;
 
 ///////////////////////////////////////////////////////////////////////////////
 // INVALID BUNDLES
@@ -497,11 +497,11 @@ const invalidIntotoTLogEntryForMessageSig = {
 };
 
 export default {
-  // publicKey,
-  // artifact: Buffer.from('hello, world!'),
+  publicKey,
+  artifact: Buffer.from('hello, world!'),
   valid: {
     withSigningCert: validBundleWithSigningCert,
-    // withPublicKey: validBundleWithPublicKey,
+    withPublicKey: validBundleWithPublicKey,
   },
   invalid: {
     // expiredCert: invalidExpiredCert,

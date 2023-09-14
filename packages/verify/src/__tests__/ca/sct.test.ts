@@ -1,8 +1,9 @@
-import { verifySCTs } from '../../ctlog/sct';
+import { verifySCTs } from '../../ca/sct';
 import { crypto } from '../../util';
 import { x509Certificate } from '../../x509/cert';
 import { certificates } from '../__fixtures__/certs';
 
+import { VerificationError } from '../../error';
 import type { TLogAuthority } from '../../trust';
 
 describe('verifySCTs', () => {
@@ -69,23 +70,23 @@ mygUY7Ii2zbdCdliiow=
 -----END CERTIFICATE-----`;
       const issuer = x509Certificate.parse(issuerPEM);
 
-      it('returns true', () => {
+      it('returns the list of verified SCTs', () => {
         expect(leaf.extSCT).toBeDefined();
         const results = verifySCTs(leaf, issuer, logs);
         expect(results).toBeDefined();
         expect(results).toHaveLength(1);
-        expect(results[0].verified).toBe(true);
+        expect(results[0].logID).toEqual(ctl.logID);
       });
     });
 
     describe('when the SCTs are invalid', () => {
       const badIssuer = x509Certificate.parse(certificates.root);
 
-      it('returns false', () => {
-        const results = verifySCTs(leaf, badIssuer, logs);
-        expect(results).toBeDefined();
-        expect(results).toHaveLength(1);
-        expect(results[0].verified).toBe(false);
+      it('throws an error', () => {
+        expect(() => verifySCTs(leaf, badIssuer, logs)).toThrowWithCode(
+          VerificationError,
+          'CERTIFICATE_ERROR'
+        );
       });
     });
   });
