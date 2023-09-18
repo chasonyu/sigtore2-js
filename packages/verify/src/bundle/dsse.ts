@@ -1,6 +1,7 @@
-import type { Envelope } from '@sigstore/bundle';
-import type { SignatureContent, SignatureVerifier } from '../shared.types';
 import { crypto } from '../util';
+
+import type { Envelope } from '@sigstore/bundle';
+import type { SignatureContent } from '../shared.types';
 
 const PAE_PREFIX = 'DSSEv1';
 
@@ -9,7 +10,6 @@ export class DSSESignatureContent implements SignatureContent {
 
   constructor(env: Envelope) {
     this.env = env;
-    const x = this.env.signatures[0];
   }
 
   public compareDigest(digest: Buffer): boolean {
@@ -20,8 +20,8 @@ export class DSSESignatureContent implements SignatureContent {
     return crypto.bufferEqual(signature, this.signature);
   }
 
-  public verifySignature(sigVerifier: SignatureVerifier): boolean {
-    return sigVerifier.verifySignature(this.signature, this.preAuthEncoding);
+  public verifySignature(key: crypto.KeyObject): boolean {
+    return crypto.verify(this.preAuthEncoding, key, this.signature);
   }
 
   private get signature(): Buffer {

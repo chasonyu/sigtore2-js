@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import { VerificationError } from '../error';
-import { TLogAuthority, filterTLogAuthorities } from '../trust';
+import { filterTLogAuthorities } from '../trust';
 import { crypto, json } from '../util';
 
 import type { TLogEntryWithInclusionPromise } from '@sigstore/bundle';
+import type { TLogAuthority } from '../trust';
 
 // Structure over which the tlog SET signature is generated
 interface VerificationPayload {

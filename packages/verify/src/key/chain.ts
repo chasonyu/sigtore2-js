@@ -14,35 +14,62 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import { VerificationError } from '../error';
+import { filterCertAuthorities } from '../trust';
 import { x509Certificate } from '../x509/cert';
 
-interface VerifyCertificateChainOptions {
-  trustedCerts: x509Certificate[];
-  untrustedCert: x509Certificate;
-  validAt?: Date;
-}
+import { CertAuthority } from '../trust';
 
 export function verifyCertificateChain(
-  opts: VerifyCertificateChainOptions
+  leaf: x509Certificate,
+  certificateAuthorities: CertAuthority[]
 ): x509Certificate[] {
-  const verifier = new CertificateChainVerifier(opts);
-  return verifier.verify();
+  // Filter list of trusted CAs to those which are valid for the given
+  // leaf certificate.
+  const cas = filterCertAuthorities(certificateAuthorities, {
+    start: leaf.notBefore,
+    end: leaf.notAfter,
+  });
+
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  let error: any;
+  for (const ca of cas) {
+    try {
+      const verifier = new CertificateChainVerifier({
+        trustedCerts: ca.certChain,
+        untrustedCert: leaf,
+      });
+      return verifier.verify();
+    } catch (err) {
+      error = err;
+    }
+  }
+
+  // If we failed to verify the certificate chain for all of the trusted
+  // CAs, throw the last error we encountered.
+  throw new VerificationError({
+    code: 'CERTIFICATE_ERROR',
+    message: 'Failed to verify certificate chain',
+    cause: error,
+  });
+}
+
+interface CertificateChainVerifierOptions {
+  trustedCerts: x509Certificate[];
+  untrustedCert: x509Certificate;
 }
 
 class CertificateChainVerifier {
   private untrustedCert: x509Certificate;
   private trustedCerts: x509Certificate[];
   private localCerts: x509Certificate[];
-  private validAt: Date;
 
-  constructor(opts: VerifyCertificateChainOptions) {
+  constructor(opts: CertificateChainVerifierOptions) {
     this.untrustedCert = opts.untrustedCert;
     this.trustedCerts = opts.trustedCerts;
     this.localCerts = dedupeCertificates([
       ...opts.trustedCerts,
       opts.untrustedCert,
     ]);
-    this.validAt = opts.validAt || new Date();
   }
 
   public verify(): x509Certificate[] {
@@ -180,15 +207,6 @@ class CertificateChainVerifier {
       throw new VerificationError({
         code: 'CERTIFICATE_ERROR',
         message: 'certificate chain must contain at least one certificate',
-      });
-    }
-
-    // Check that all certificates are valid at the check date
-    const validForDate = path.every((cert) => cert.validForDate(this.validAt));
-    if (!validForDate) {
-      throw new VerificationError({
-        code: 'CERTIFICATE_ERROR',
-        message: 'certificate is not valid or expired at the specified date',
       });
     }
 

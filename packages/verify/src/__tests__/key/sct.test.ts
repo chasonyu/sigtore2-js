@@ -1,9 +1,9 @@
-import { verifySCTs } from '../../ca/sct';
+import { VerificationError } from '../../error';
+import { verifySCTs } from '../../key/sct';
 import { crypto } from '../../util';
 import { x509Certificate } from '../../x509/cert';
 import { certificates } from '../__fixtures__/certs';
 
-import { VerificationError } from '../../error';
 import type { TLogAuthority } from '../../trust';
 
 describe('verifySCTs', () => {
@@ -75,7 +75,7 @@ mygUY7Ii2zbdCdliiow=
         const results = verifySCTs(leaf, issuer, logs);
         expect(results).toBeDefined();
         expect(results).toHaveLength(1);
-        expect(results[0].logID).toEqual(ctl.logID);
+        expect(results[0]).toEqual(ctl.logID);
       });
     });
 

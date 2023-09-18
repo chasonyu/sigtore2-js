@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { VerificationError } from '../error';
 import { verifyCheckpoint } from './checkpoint';
 import { verifyMerkleInclusion } from './merkle';
@@ -8,34 +9,26 @@ import type {
   TLogEntryWithInclusionProof,
   TransparencyLogEntry,
 } from '@sigstore/bundle';
-import type {
-  TLogAuthority,
-  TimestampProvider,
-  TimestampVerificationResult,
-  TrustMaterial,
-} from '../shared.types';
+import type { RFC3161Timestamp } from '../shared.types';
+import type { CertAuthority, TLogAuthority } from '../trust';
 
-export function verifyTimestamps(
-  provider: TimestampProvider,
-  trustMaterial: TrustMaterial
-): TimestampVerificationResult[] {
-  return provider.timestamps().map((timestamp) => {
-    switch (timestamp.$case) {
-      case 'timestamp-authority':
-        throw new VerificationError({
-          code: 'NOT_IMPLEMENTED_ERROR',
-          message: 'timestamp-authority not implemented',
-        });
-      case 'transparency-log':
-        return verifyTLogTimestamp(timestamp.tlogEntry, trustMaterial.tlogs);
-    }
+/* istanbul ignore next */
+export function verifyTSATimestamp(
+  timestamp: RFC3161Timestamp,
+  timestampAuthorities: CertAuthority[]
+): void {
+  assert(timestamp);
+  assert(timestampAuthorities);
+  throw new VerificationError({
+    code: 'NOT_IMPLEMENTED_ERROR',
+    message: 'timestamp-authority not implemented',
   });
 }
 
-function verifyTLogTimestamp(
+export function verifyTLogTimestamp(
   entry: TransparencyLogEntry,
   tlogAuthorities: TLogAuthority[]
-): TimestampVerificationResult {
+): void {
   let inclusionVerified = false;
 
   if (isTLogEntryWithInclusionPromise(entry)) {
@@ -55,12 +48,6 @@ function verifyTLogTimestamp(
       message: 'inclusion could not be verified',
     });
   }
-
-  return {
-    type: 'transparency-log',
-    logID: entry.logId.keyId,
-    timestamp: new Date(Number(entry.integratedTime) * 1000),
-  };
 }
 
 function isTLogEntryWithInclusionPromise(

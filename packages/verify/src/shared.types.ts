@@ -1,57 +1,19 @@
 import type { TransparencyLogEntry } from '@sigstore/bundle';
-import type { KeyObject } from './util/crypto';
-import { x509Certificate } from './x509/cert';
+import type { KeyObject } from 'crypto';
+import type { x509Certificate } from './x509/cert';
 
-export type SignatureVerifier = {
-  verifySignature(signature: Buffer, data: Buffer): boolean;
-  scts: SCTVerificationResult[];
+export interface SCTVerificationResult {
+  logID: Buffer;
+}
+
+export type Signer = {
+  key: KeyObject;
   issuer: string | undefined;
   subject: string | undefined;
 };
 
-type ValidityPeriodChecker = {
-  validFor(date: Date): boolean;
-};
-
-export type TimeConstrainedKey = ValidityPeriodChecker & {
-  publicKey: KeyObject;
-};
-
-/******************************************************************************/
-// Trust Material
-/******************************************************************************/
-
-export type TLogAuthority = {
-  logID: Buffer;
-  publicKey: KeyObject;
-  validFor: {
-    start: Date;
-    end: Date;
-  };
-};
-
-export type CertAuthority = {
-  certChain: x509Certificate[];
-  validFor: {
-    start: Date;
-    end: Date;
-  };
-};
-
-export type TrustMaterial = {
-  certificateAuthorities: CertAuthority[];
-  timestampAuthorities: CertAuthority[];
-  tlogs: TLogAuthority[];
-  ctlogs: TLogAuthority[];
-  publicKey(keyID: string): TimeConstrainedKey;
-};
-
-/******************************************************************************/
-// Signed Entity
-/******************************************************************************/
-
 // TODO: Implement this!
-type RFC3161Timestamp = {};
+export type RFC3161Timestamp = object;
 
 export type Timestamp =
   | {
@@ -63,20 +25,6 @@ export type Timestamp =
       tlogEntry: TransparencyLogEntry;
     };
 
-export type SignatureContent = {
-  compareSignature(signature: Buffer): boolean;
-  compareDigest(digest: Buffer): boolean;
-  verifySignature(sigVerifier: SignatureVerifier): boolean;
-};
-
-export type TimestampProvider = {
-  timestamps(): Timestamp[];
-};
-
-export type SignatureProvider = {
-  signature(): SignatureContent;
-};
-
 export type VerificationKey =
   | {
       $case: 'public-key';
@@ -87,31 +35,29 @@ export type VerificationKey =
       certificate: x509Certificate;
     };
 
+export type SignatureContent = {
+  compareSignature(signature: Buffer): boolean;
+  compareDigest(digest: Buffer): boolean;
+  verifySignature(key: KeyObject): boolean;
+};
+
+export type TimestampProvider = {
+  timestamps: Timestamp[];
+};
+
+export type SignatureProvider = {
+  signature: SignatureContent;
+};
+
 export type KeyProvider = {
-  key(): VerificationKey;
+  key: VerificationKey;
 };
 
 export type TLogEntryProvider = {
-  tlogEntries(): TransparencyLogEntry[];
+  tlogEntries: TransparencyLogEntry[];
 };
 
 export type SignedEntity = SignatureProvider &
   KeyProvider &
   TimestampProvider &
   TLogEntryProvider;
-
-/******************************************************************************/
-// Signed Entity
-/******************************************************************************/
-
-export type TimestampType = 'transparency-log' | 'timestamp-authority';
-
-export type TimestampVerificationResult = {
-  type: TimestampType;
-  logID: Buffer;
-  timestamp: Date;
-};
-
-export interface SCTVerificationResult {
-  logID: Buffer;
-}

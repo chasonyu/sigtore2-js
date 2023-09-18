@@ -14,18 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import { VerificationError } from '../error';
-import type { SCTVerificationResult } from '../shared.types';
-import { TLogAuthority, filterTLogAuthorities } from '../trust';
+import { filterTLogAuthorities } from '../trust';
 import { crypto } from '../util';
 import { ByteStream } from '../util/stream';
 import { EXTENSION_OID_SCT, x509Certificate } from '../x509/cert';
 import { x509SCTExtension } from '../x509/ext';
 
+import type { TLogAuthority } from '../trust';
+export type VerifiedSCTProvider = Buffer;
+
 export function verifySCTs(
   cert: x509Certificate,
   issuer: x509Certificate,
   ctlogs: TLogAuthority[]
-): SCTVerificationResult[] {
+): VerifiedSCTProvider[] {
   let extSCT: x509SCTExtension | undefined;
 
   // Verifying the SCT requires that we remove the SCT extension and
@@ -94,6 +96,6 @@ export function verifySCTs(
       });
     }
 
-    return { logID: sct.logID };
+    return sct.logID;
   });
 }

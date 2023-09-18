@@ -1,8 +1,9 @@
 import { VerificationError } from '../error';
-import { filterTLogAuthorities, TLogAuthority } from '../trust';
+import { filterTLogAuthorities } from '../trust';
 import { crypto } from '../util';
 
 import type { TLogEntryWithInclusionProof } from '@sigstore/bundle';
+import type { TLogAuthority } from '../trust';
 
 // Separator between the note and the signatures in a checkpoint
 const CHECKPOINT_SEPARATOR = '\n\n';

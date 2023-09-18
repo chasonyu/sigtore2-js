@@ -20,9 +20,10 @@ import {
 import { fromPartial } from '@total-typescript/shoehorn';
 import { VerificationError } from '../../error';
 import { verifyTLogSET } from '../../timestamp/set';
-import type { TLogAuthority } from '../../trust';
 import { crypto } from '../../util';
 import bundles from '../__fixtures__/bundles/v01';
+
+import type { TLogAuthority } from '../../trust';
 
 describe('verifyTLogSET', () => {
   const keyBytes = Buffer.from(

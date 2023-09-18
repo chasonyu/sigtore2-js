@@ -25,7 +25,9 @@ type VerificationErrorCode =
   | 'TLOG_MISSING_INCLUSION_ERROR'
   | 'TLOG_BODY_ERROR'
   | 'CERTIFICATE_ERROR'
-  | 'PUBLIC_KEY_ERROR';
+  | 'PUBLIC_KEY_ERROR'
+  | 'SIGNATURE_ERROR'
+  | 'TIMESTAMP_ERROR';
 
 export class VerificationError extends BaseError<VerificationErrorCode> {
   // Using during transition to new error class. Callers should specify their own code
@@ -41,17 +43,3 @@ export class VerificationError extends BaseError<VerificationErrorCode> {
     super({ code, message, cause });
   }
 }
-
-/*
-export class ValidationError extends BaseError<'VALIDATION_ERROR'> {
-  fields: string[];
-
-  constructor(message: string, fields: string[]) {
-    super({
-      code: 'VALIDATION_ERROR',
-      message,
-    });
-    this.fields = fields;
-  }
-}
-*/

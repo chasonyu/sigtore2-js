@@ -1,12 +1,17 @@
-import type { MessageSignature } from '@sigstore/bundle';
-import type { SignatureContent, SignatureVerifier } from '../shared.types';
 import { crypto } from '../util';
 
-export class MessageSignatureContent implements SignatureContent {
-  private readonly messageSignature: MessageSignature;
+import type { MessageSignature } from '@sigstore/bundle';
+import type { SignatureContent } from '../shared.types';
 
-  constructor(messageSignature: MessageSignature) {
-    this.messageSignature = messageSignature;
+export class MessageSignatureContent implements SignatureContent {
+  private readonly signature: Buffer;
+  private readonly messageDigest: Buffer;
+  private readonly artifact: Buffer;
+
+  constructor(messageSignature: MessageSignature, artifact: Buffer) {
+    this.signature = messageSignature.signature;
+    this.messageDigest = messageSignature.messageDigest.digest;
+    this.artifact = artifact;
   }
 
   public compareSignature(signature: Buffer): boolean {
@@ -14,20 +19,10 @@ export class MessageSignatureContent implements SignatureContent {
   }
 
   public compareDigest(digest: Buffer): boolean {
-    return crypto.bufferEqual(
-      digest,
-      this.messageSignature.messageDigest.digest
-    );
+    return crypto.bufferEqual(digest, this.messageDigest);
   }
 
-  public verifySignature(sigVerifier: SignatureVerifier): boolean {
-    return sigVerifier.verifySignature(
-      this.signature,
-      this.messageSignature.messageDigest.digest
-    );
-  }
-
-  private get signature(): Buffer {
-    return this.messageSignature.signature;
+  public verifySignature(key: crypto.KeyObject): boolean {
+    return crypto.verify(this.artifact, key, this.signature);
   }
 }

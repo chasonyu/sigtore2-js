@@ -1,5 +1,5 @@
-import type { KeyObject } from 'crypto';
-import { x509Certificate } from '../x509/cert';
+import type { KeyObject } from '../util/crypto';
+import type { x509Certificate } from '../x509/cert';
 
 export type TLogAuthority = {
   logID: Buffer;
@@ -17,29 +17,18 @@ export type CertAuthority = {
     end: Date;
   };
 };
-/* Move all this into client package */
-/**
-export type PublicKey = PublicKeyProto & {
-  rawBytes: NonNullable<PublicKeyProto['rawBytes']>;
+
+export type TimeConstrainedKey = {
+  publicKey: KeyObject;
+  validFor(date: Date): boolean;
 };
 
-export type TransparencyLogInstance = TransparencyLogInstanceProto & {
-  logId: NonNullable<TransparencyLogInstanceProto['logId']>;
-  publicKey: PublicKey;
-};
+export type KeyFinderFunc = (hint: string) => TimeConstrainedKey;
 
-export type CertificateAuthority = CertificateAuthorityProto & {
-  certChain: NonNullable<CertificateAuthorityProto['certChain']>;
-  validFor: CertificateAuthorityProto['validFor'] & {
-    start: NonNullable<CertificateAuthorityProto['validFor']>['start'];
-  };
+export type TrustMaterial = {
+  certificateAuthorities: CertAuthority[];
+  timestampAuthorities: CertAuthority[];
+  tlogs: TLogAuthority[];
+  ctlogs: TLogAuthority[];
+  publicKey: KeyFinderFunc;
 };
-
-export type TrustedMaterial = {
-  ctlogs: TransparencyLogInstance[];
-  tlogs: TransparencyLogInstance[];
-  certificateAuthorities: CertificateAuthority[];
-  timestampAuthorities: CertificateAuthority[];
-  publicKeys: { keyID: string; publicKey: PublicKey }[];
-};
-**/
