@@ -15,6 +15,7 @@ limitations under the License.
 */
 module.exports = {
   projects: ['<rootDir>/packages/*/jest.config.js'],
+  workerIdleMemoryLimit: '512MB',
   coverageThreshold: {
     global: {
       branches: 100,
